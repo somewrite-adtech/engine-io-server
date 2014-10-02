@@ -234,12 +234,12 @@ c"))
             (on :drain server
                 (lambda (sock)
                   (assert (eq socket sock))
-                  (assert (zerop (length (engine-io-server.socket::write-buffer socket))))
+                  (assert (zerop (length (engine-io-server.socket:socket-write-buffer socket))))
                   (when (zerop (decf total-event))
                     (done))))
             (on :drain socket
                 (lambda ()
-                  (assert (zerop (length (engine-io-server.socket::write-buffer socket))))
+                  (assert (zerop (length (engine-io-server.socket:socket-write-buffer socket))))
                   (when (zerop (decf total-event))
                     (done))))
 

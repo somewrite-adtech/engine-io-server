@@ -65,7 +65,7 @@
   (nth-value 1
              (ppcre:scan-to-strings regex target-string)))
 
-(defparameter *timeout-seconds* 10)
+(defparameter *timeout-seconds* 30)
 
 (defmacro with-waiting (&body body)
   (let ((result (gensym "RESULT"))

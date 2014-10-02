@@ -21,13 +21,13 @@
               (on :close socket
                   (lambda (reason description)
                     (declare (ignore reason description))
-                    (let ((len (length (engine-io-server.socket:write-buffer socket))))
+                    (let ((len (length (engine-io-server.socket:socket-write-buffer socket))))
                       (as:with-delay (0.01)
                         (done (list len
-                                    (length (engine-io-server.socket:write-buffer socket))))))))
+                                    (length (engine-io-server.socket:socket-write-buffer socket))))))))
               (vector-push-extend (engine-io-parser:make-packet :type :message
                                                                 :data "foo")
-                                  (engine-io-server.socket:write-buffer socket))))
+                                  (engine-io-server.socket:socket-write-buffer socket))))
         (node-exec
          (with-client-socket (socket)
            (on :open socket
@@ -319,14 +319,16 @@
 
 (with-server (:allow-upgrades nil :ping-interval 80 :ping-timeout 50)
   (diag "should not trigger early with connection 'ping timeout' after post ping timeout")
-  (let (method)
+  (let ((original-on-packet #'engine-io-server.socket:on-packet))
     (on :connection *server*
         (lambda (socket)
           (on :heartbeat socket
               (lambda ()
-                (setf method
-                      (defmethod engine-io-server.socket:on-packet ((socket (eql socket)) (packet t))
-                        nil))))))
+                (setf (symbol-function 'engine-io-server.socket:on-packet)
+                      (lambda (event-socket packet)
+                        (if (eq socket event-socket)
+                            nil
+                            (funcall original-on-packet event-socket packet))))))))
     (is (node-exec
          (with-client-socket (socket)
            (on :open socket
@@ -337,8 +339,8 @@
            (set-timeout exit 100)))
         "")
 
-    (when method
-      (remove-method #'engine-io-server.socket:on-packet method))))
+    (setf (symbol-function 'engine-io-server.socket:on-packet)
+          original-on-packet)))
 
 (with-server (:allow-upgrades nil :ping-interval 80 :ping-timeout 50)
   (diag "should trigger early with connection 'transport close' after missing pong")
@@ -360,15 +362,17 @@
 
 (with-server (:allow-upgrades nil :ping-interval 300 :ping-timeout 100)
   (diag "should trigger with connection 'ping timeout' after 'ping-interval' + 'ping-timeout'")
-  (let (method)
+  (let ((original-on-packet #'engine-io-server.socket:on-packet))
     (on :connection *server*
         (lambda (socket)
           (once :heartbeat socket
                 (lambda ()
                   (as:with-delay (0.15)
-                    (setf method
-                          (defmethod engine-io-server.socket:on-packet ((socket (eql socket)) (packet t))
-                            nil)))))))
+                    (setf (symbol-function 'engine-io-server.socket:on-packet)
+                          (lambda (event-socket packet)
+                            (if (eq socket event-socket)
+                                nil
+                                (funcall original-on-packet event-socket packet)))))))))
     (is (node-exec
          (with-client-socket (socket)
            (on :open socket
@@ -396,8 +400,9 @@
                        (console.log reason)))
                  (set-timeout exit 800)))))
         "ping timeout")
-    (when method
-      (remove-method #'engine-io-server.socket:on-packet method))))
+
+    (setf (symbol-function 'engine-io-server.socket:on-packet)
+          original-on-packet)))
 
 (with-server (:transports '("websocket"))
   (diag "should trigger transport close before open for ws")

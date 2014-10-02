@@ -104,7 +104,7 @@
   (like (with-waiting
           (on :connection *server*
               (lambda (socket)
-                (done (transport-name (transport socket)))))
+                (done (transport-name (socket-transport socket)))))
           (node-exec
            (with-client-socket (socket)
              ((@ socket on) "open"
@@ -117,7 +117,7 @@
   (is (with-waiting
         (on :connection *server*
             (lambda (socket)
-              (done (transport-name (transport socket)))))
+              (done (transport-name (socket-transport socket)))))
         (node-exec
          (with-client-socket (socket nil :transports '("websocket"))
            (set-timeout (lambda () ((@ process exit))) 500))))
@@ -192,8 +192,8 @@ echo"))
   (is (with-waiting
         (on :connection *server*
             (lambda (socket)
-              (done (list (query-parameter (request socket) "transport")
-                          (query-parameter (request socket) "a")))))
+              (done (list (query-parameter (socket-request socket) "transport")
+                          (query-parameter (socket-request socket) "a")))))
         (node-exec (with-client-socket (socket (ws-localhost "/" '(("a" . "b"))))
                      (set-timeout (lambda () ((@ process exit))) 500))))
       (list "polling" "b")))
@@ -203,9 +203,9 @@ echo"))
   (is (with-waiting
         (on :connection *server*
             (lambda (socket)
-              (done (list (query-parameter (request socket) "EIO")
-                          (query-parameter (request socket) "a")
-                          (query-parameter (request socket) "c")))))
+              (done (list (query-parameter (socket-request socket) "EIO")
+                          (query-parameter (socket-request socket) "a")
+                          (query-parameter (socket-request socket) "c")))))
         (node-exec (with-client-socket (socket (ws-localhost "/" '(("a" . "b") ("c" . "d"))))
                      (set-timeout (lambda () ((@ process exit))) 500))))
       (list "3" "b" "d")))

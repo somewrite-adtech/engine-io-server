@@ -43,11 +43,11 @@
 (cl-reexport:reexport-from :engine-io-server.socket
                            :include '(:socket
                                       :socket-id
-                                      :request
-                                      :transport
-                                      :config
-                                      :ready-state
-                                      :upgradedp
+                                      :socket-request
+                                      :socket-transport
+                                      :socket-config
+                                      :socket-ready-state
+                                      :socket-upgraded-p
                                       :send
                                       :send-data
                                       :close-socket))

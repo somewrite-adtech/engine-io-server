@@ -7,10 +7,10 @@
                 :transport-name
                 :on-request)
   (:import-from :engine-io-server.socket
-                :socket
-                :transport
+                :make-socket
+                :socket-transport
                 :socket-id
-                :upgradedp
+                :socket-upgraded-p
                 :maybe-upgrade
                 :open-socket
                 :close-socket)
@@ -139,7 +139,7 @@
         (unless (gethash sid (clients server))
           (error 'unknown-sid))
         (unless (or upgrade
-                    (string= (transport-name (transport (gethash sid (clients server))))
+                    (string= (transport-name (socket-transport (gethash sid (clients server))))
                              transport-name))
           (log:debug "bad request: unexpected transport without upgrade")
           (error 'bad-request)))
@@ -185,7 +185,7 @@
         (if-let (sid (query-parameter req "sid"))
           (progn
             (log:debug "setting new request for existing client")
-            (on-request (transport (gethash sid (clients server))) req res))
+            (on-request (socket-transport (gethash sid (clients server))) req res))
           (handler-case
               (handshake server
                          (query-parameter req "transport")
@@ -285,7 +285,7 @@
         ((null client)
          (log:debug "upgrade attempt for closed client")
          (wsd:close-connection ws))
-        ((upgradedp client)
+        ((socket-upgraded-p client)
          (log:debug "transport had already been upgraded")
          (wsd:close-connection ws))
         (T
