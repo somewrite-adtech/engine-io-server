@@ -20,7 +20,6 @@
                :websocket-driver
                :cl-async
                :clack
-               :jsown
                :unicly
                :babel
                :alexandria

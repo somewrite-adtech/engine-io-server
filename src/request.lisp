@@ -80,7 +80,7 @@
   (let ((hash (make-hash-table :test 'equal)))
     (when query
       (dolist (kv (split-sequence #\& query))
-        (destructuring-bind (k v)
-            (split-sequence #\= kv)
-          (setf (gethash k hash) v))))
+        (multiple-value-bind (key pos)
+            (split-sequence #\= kv :count 1)
+          (setf (gethash (car key) hash) (subseq kv pos)))))
     hash))

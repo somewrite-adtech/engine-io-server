@@ -58,7 +58,7 @@
   (flet ((name-to-class (name request)
            (cond
              ((string= name "websocket")
-              (intern (string-upcase name) :engine-io-server.transport.websocket))
+              (intern #.(string :websocket) :engine-io-server.transport.websocket))
              ((string= name "polling")
               (if (string= (query-parameter request "j")
                            "string")

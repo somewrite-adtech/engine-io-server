@@ -39,9 +39,8 @@
 
     (funcall (response polling)
              (list 200
-                   (append (headers polling)
-                           (list :content-type content-type
-                                 :content-length (length data)))
+                   (nconc (list :content-type content-type)
+                          (headers polling))
                    (if (stringp data)
                        (list data)
                        data)))))

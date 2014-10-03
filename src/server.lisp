@@ -45,7 +45,7 @@
   (:import-from :cl-async
                 :socket-closed)
   (:import-from :websocket-driver
-                :make-server
+                :make-server-for-clack
                 :start-connection
                 :close-connection)
   (:import-from :alexandria
@@ -202,7 +202,7 @@
     (let ((upgrade (gethash :http-upgrade (env req))))
       (if (and upgrade
                (string-equal upgrade "websocket"))
-          (let ((ws (wsd:make-server (raw-env req))))
+          (let ((ws (wsd:make-server-for-clack (raw-env req))))
             (lambda (responder)
               (let ((res (lambda (&rest args)
                            (handler-case (apply responder args)

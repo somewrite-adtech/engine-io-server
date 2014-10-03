@@ -64,18 +64,17 @@
   (diag "should exchange handshake data")
   (like (node-exec
          (with-client-socket (socket)
-           ((@ socket on) "handshake"
-            (lambda (obj)
-              ((@ console log)
-               (+ (= (typeof (@ obj sid)) "string") ":"
-                  (= (typeof (@ obj ping-timeout)) "number") ":"
-                  ((@ -array is-array) (@ obj upgrades))
-                  " / "
-                  (@ obj sid) ":"
-                  (@ obj ping-timeout) ":"
-                  (@ obj upgrades)))
-              ((@ process exit))))
-           (set-timeout (lambda ()) (* 30 1000))))
+           (on :handshake socket
+               (lambda (obj)
+                 (console.log
+                  (+ (= (typeof (@ obj sid)) "string") ":"
+                     (= (typeof (@ obj ping-timeout)) "number") ":"
+                     ((@ -array is-array) (@ obj upgrades))
+                     " / "
+                     (@ obj sid) ":"
+                     (@ obj ping-timeout) ":"
+                     (@ obj upgrades)))
+                 (exit)))))
         "^true:true:true"))
 
 (with-server (:allow-upgrades nil :ping-timeout 123)

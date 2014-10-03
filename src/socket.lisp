@@ -40,8 +40,6 @@
   (:import-from :cl-async-future
                 :make-future
                 :finish)
-  (:import-from :jsown
-                :to-json)
   (:import-from :unicly
                 :make-v4-uuid)
   (:import-from :alexandria
@@ -62,8 +60,6 @@
   (ready-state :opening)
   (upgraded-p nil)
   (write-buffer (make-write-buffer))
-  (packets-fn '())
-  (sent-callback-fn '())
   (timers (make-timers)))
 
 (defun make-write-buffer ()
@@ -103,7 +99,7 @@
   (once :close transport
         (lambda ()
           (on-close socket "transport close")))
-  (setup-send-callback socket))
+  (values))
 
 @export
 (defun open-socket (socket)
@@ -113,12 +109,11 @@
 
   (let ((config (socket-config socket)))
     (send-data socket :open
-               (jsown:to-json
-                `(:obj
-                  ("sid"          . ,(socket-id socket))
-                  ("upgrades"     . ,(available-upgrades socket))
-                  ("pingInterval" . ,(ping-interval config))
-                  ("pingTimeout"  . ,(ping-timeout config))))))
+               (format nil "{\"sid\":~S,\"upgrades\":[~{~S~^,~}],\"pingInterval\":~D,\"pingTimeout\":~D}"
+                       (socket-id socket)
+                       (available-upgrades socket)
+                       (ping-interval config)
+                       (ping-timeout config))))
 
   (emit :open socket)
   (set-ping-timeout socket))
@@ -160,8 +155,6 @@
     (emit :close socket reason description)
     (setf (socket-write-buffer socket)
           (make-write-buffer))
-    (setf (slot-value socket 'packets-fn) '())
-    (setf (slot-value socket 'sent-callback-fn) '())
     (values)))
 
 (defun start-check-interval (socket)
@@ -229,11 +222,11 @@
                                          1000)))
 
 @export
-(defun send (socket data &optional fn)
-  (send-data socket :message data fn))
+(defun send (socket data)
+  (send-data socket :message data))
 
 @export
-(defun send-data (socket type &optional data fn)
+(defun send-data (socket type &optional data)
   (when (eq (socket-ready-state socket) :closing)
     (return-from send-data))
 
@@ -244,9 +237,6 @@
     (emit :packet-create socket packet)
 
     (vector-push-extend packet (socket-write-buffer socket))
-
-    (when fn
-      (push fn (slot-value socket 'packets-fn)))
 
     (flush-buffer socket)))
 
@@ -265,34 +255,12 @@
   (let ((wbuf (socket-write-buffer socket)))
     (setf (socket-write-buffer socket)
           (make-write-buffer))
-    (if (supports-framing (socket-transport socket))
-        (setf (slot-value socket 'sent-callback-fn)
-              (append (slot-value socket 'packets-fn)
-                      (slot-value socket 'sent-callback-fn)))
-        (push (slot-value socket 'packets-fn)
-              (slot-value socket 'sent-callback-fn)))
-    (setf (slot-value socket 'packets-fn) '())
     (send-packets (socket-transport socket) (coerce wbuf 'list))) ;; XXX
 
   (emit :drain socket)
   (emit :drain (socket-server socket) socket)
 
   (values))
-
-(defun setup-send-callback (socket)
-  (on :drain (socket-transport socket)
-      (lambda ()
-        (dolist (fn (nreverse (slot-value socket 'sent-callback-fn)))
-          (typecase fn
-            (function
-             (log:debug "executing send callback")
-             (funcall fn))
-            (list
-             (log:debug "executing batch send callback")
-             (dolist (fn (nreverse fn))
-               (when (functionp fn)
-                 (funcall fn))))))
-        (setf (slot-value socket 'sent-callback-fn) '()))))
 
 @export
 (defun upgrades (socket transport)
