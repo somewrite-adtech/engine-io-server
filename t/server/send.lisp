@@ -166,38 +166,44 @@ true"))
 
 (with-server (:allow-upgrades nil)
   (diag "should execute when message sent (polling)")
-  (let ((i 0))
+  (let ((i 0)
+        client-output)
     (on :connection *server*
         (lambda (socket)
           (send socket "a")
           (incf i)))
-    (is (node-exec
-         (with-client-socket (socket (ws-localhost) :transports '("polling"))
-           (let ((j 0))
-             (on :open socket
-                 (lambda ()
-                   (on :message socket
-                       (lambda (msg)
-                         (incf j)))
-                   (set-timeout (lambda () (console.log j) (exit)) 10))))))
+    (setf client-output
+          (node-exec
+           (with-client-socket (socket (ws-localhost) :transports '("polling"))
+             (let ((j 0))
+               (on :open socket
+                   (lambda ()
+                     (on :message socket
+                         (lambda (msg)
+                           (incf j)))
+                     (set-timeout (lambda () (console.log j) (exit)) 10)))))))
+    (is client-output
         (write-to-string i))))
 
 (with-server (:allow-upgrades nil)
   (diag "should execute when message sent (websocket)")
-  (let ((i 0))
+  (let ((i 0)
+        client-output)
     (on :connection *server*
         (lambda (socket)
           (send socket "a")
           (incf i)))
-    (is (node-exec
-         (with-client-socket (socket (ws-localhost) :transports '("websocket"))
-           (let ((j 0))
-             (on :open socket
-                 (lambda ()
-                   (on :message socket
-                       (lambda (msg)
-                         (incf j)))
-                   (set-timeout (lambda () (console.log j) (exit)) 10))))))
+    (setf client-output
+          (node-exec
+           (with-client-socket (socket (ws-localhost) :transports '("websocket"))
+             (let ((j 0))
+               (on :open socket
+                   (lambda ()
+                     (on :message socket
+                         (lambda (msg)
+                           (incf j)))
+                     (set-timeout (lambda () (console.log j) (exit)) 10)))))))
+    (is client-output
         (write-to-string i))))
 
 (with-server ()
@@ -234,27 +240,31 @@ true"))
 
 (with-server ()
   (diag "should execute in multipart packet")
-  (let ((i 0))
+  (let ((i 0)
+        client-output)
     (on :connection *server*
         (lambda (socket)
           (send socket "b")
           (incf i)
           (send socket "a")
           (incf i)))
-    (is (node-exec
-         (with-client-socket (socket (ws-localhost))
-           (let ((j 0))
-             (on :open socket
-                 (lambda ()
-                   (on :message socket
-                       (lambda (msg)
-                         (incf j)))
-                   (set-timeout (lambda () (console.log j) (exit)) 200))))))
+    (setf client-output
+          (node-exec
+           (with-client-socket (socket (ws-localhost))
+             (let ((j 0))
+               (on :open socket
+                   (lambda ()
+                     (on :message socket
+                         (lambda (msg)
+                           (incf j)))
+                     (set-timeout (lambda () (console.log j) (exit)) 200)))))))
+    (is client-output
         (write-to-string i))))
 
 (with-server ()
   (diag "should execute in multipart packet (polling)")
-  (let ((i 0))
+  (let ((i 0)
+        client-output)
     (on :connection *server*
         (lambda (socket)
           (send socket "d")
@@ -265,15 +275,17 @@ true"))
           (incf i)
           (send socket "a")
           (incf i)))
-    (is (node-exec
-         (with-client-socket (socket (ws-localhost) :transports '("polling"))
-           (let ((j 0))
-             (on :open socket
-                 (lambda ()
-                   (on :message socket
-                       (lambda (msg)
-                         (incf j)))
-                   (set-timeout (lambda () (console.log j) (exit)) 200))))))
+    (setf client-output
+          (node-exec
+           (with-client-socket (socket (ws-localhost) :transports '("polling"))
+             (let ((j 0))
+               (on :open socket
+                   (lambda ()
+                     (on :message socket
+                         (lambda (msg)
+                           (incf j)))
+                     (set-timeout (lambda () (console.log j) (exit)) 200)))))))
+    (is client-output
         (write-to-string i))))
 
 (with-server (:allow-upgrades nil)

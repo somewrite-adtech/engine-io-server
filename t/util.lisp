@@ -51,6 +51,7 @@
                (*server* (make-instance 'server ,@initargs))
                (,handler (let ((*standard-output* (make-broadcast-stream)))
                            (start-server *server* :port *test-port*))))
+          (sleep 1)
           (unwind-protect (handler-bind ((usocket:connection-refused-error
                                            (lambda (e)
                                              (declare (ignore e))
@@ -59,7 +60,8 @@
                             ;; Ensure the server is started successfully
                             (drakma:http-request (localhost))
                             ,@body)
-            (stop-server ,handler))))))
+            (stop-server ,handler)
+            (sleep 0.5))))))
 
 (defun match (target-string regex)
   (nth-value 1

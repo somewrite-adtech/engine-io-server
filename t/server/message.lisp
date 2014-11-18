@@ -166,7 +166,7 @@ c"))
 1021592"))
 
 (with-server (:allow-upgrades nil :transports '("polling"))
-  (diag "should arrive whe nbinary data sent as (unsigned-byte 8) vector (polling)")
+  (diag "should arrive when binary data sent as (unsigned-byte 8) vector (polling)")
   (on :connection *server*
       (lambda (socket)
         (send-data socket :message

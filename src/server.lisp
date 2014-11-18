@@ -159,7 +159,7 @@
   (let ((req (make-request env)))
     (cond
       ((engineio-path-p server req)
-       (handler-case (if (gethash :http-upgrade (env req))
+       (handler-case (if (gethash "upgrade" (gethash :headers (env req)))
                          (handle-upgrade server req)
                          (handle-request server req))
          (server-error (err)
@@ -199,7 +199,7 @@
   (:method ((server server) req)
     (verify-request server req :upgrade t)
 
-    (let ((upgrade (gethash :http-upgrade (env req))))
+    (let ((upgrade (gethash "upgrade" (gethash :headers (env req)))))
       (if (and upgrade
                (string-equal upgrade "websocket"))
           (let ((ws (wsd:make-server-for-clack (raw-env req))))
@@ -259,7 +259,7 @@
     server))
 
 (defun error-message (req err)
-  (let ((origin (gethash :http-origin (env req))))
+  (let ((origin (gethash "origin" (gethash :headers (env req)))))
     (list 400
           (if origin
               (list :content-type "application/json"
