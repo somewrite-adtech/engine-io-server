@@ -5,6 +5,7 @@
                 :transport
                 :request
                 :writable
+                :additional-headers
                 :on-data
                 :on-close
                 :on-error
@@ -37,10 +38,16 @@
    (handles-upgrades :initform t)
    (supports-framing :initform t)))
 
+(defun set-headers-to-ws (headers ws)
+  (loop for (name value) on headers by #'cddr
+        do (wsd:set-header ws (string-capitalize name) value)))
+
 (defmethod initialize-instance :after ((transport websocket) &key)
   (setf (ws transport)
         (request-socket (request transport)))
   (assert (not (null (ws transport))))
+  (when (additional-headers transport)
+    (set-headers-to-ws (additional-headers transport) (ws transport)))
   (on :message (ws transport)
       (lambda (ev) (on-data transport (event-data ev))))
   (once :close (ws transport)
@@ -51,6 +58,9 @@
       (lambda (err)
         (on-error (ws transport)
                   (princ-to-string err)))))
+
+(defmethod (setf additional-headers) :after (headers (transport websocket))
+  (set-headers-to-ws headers (ws transport)))
 
 (defmethod on-data :before ((transport websocket) data)
   (log:debug "received ~S" data))

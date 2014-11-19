@@ -38,7 +38,10 @@
                      :initform nil
                      :accessor supports-framing)
    (writable :initform nil
-             :accessor writable)))
+             :accessor writable)
+   (additional-headers :initarg :additional-headers
+                       :initform nil
+                       :accessor additional-headers)))
 
 
 ;; event
@@ -97,7 +100,7 @@
 @export
 (defgeneric headers (transport)
   (:method ((transport transport))
-    '()))
+    (additional-headers transport)))
 
 @export
 (defgeneric close-transport (transport &optional callback)

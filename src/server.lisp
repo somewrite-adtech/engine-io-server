@@ -5,7 +5,8 @@
   (:import-from :engine-io-server.transport
                 :make-transport
                 :transport-name
-                :on-request)
+                :on-request
+                :additional-headers)
   (:import-from :engine-io-server.socket
                 :make-socket
                 :socket-transport
@@ -233,6 +234,11 @@
                           :transport transport
                           :config (server-config server))))
       (log:debug "handshaking client ~S" (socket-id socket))
+
+      (when (cookie server)
+        (setf (additional-headers transport)
+              `(:set-cookie ,(format nil "~A=~A"
+                                     (cookie server) (socket-id socket)))))
 
       (on-request transport req res)
 

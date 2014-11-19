@@ -48,7 +48,8 @@
 (defmethod headers ((polling polling-xhr))
   (let* ((req (request polling))
          (origin (gethash :origin (env req))))
-    (if origin
-        (list :access-control-allow-credentials t
-              :access-control-allow-origin origin)
-        (list :access-control-allow-origin "*"))))
+    (append (call-next-method)
+            (if origin
+                (list :access-control-allow-credentials t
+                      :access-control-allow-origin origin)
+                (list :access-control-allow-origin "*")))))
