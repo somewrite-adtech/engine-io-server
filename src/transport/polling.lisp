@@ -161,3 +161,8 @@
                    (on-close polling))
                  (on-packet polling packet)))
          packets)))
+
+(defmethod on-close :before ((polling polling))
+  (when (writable polling)
+    ;; close pending poll request
+    (send-packets polling (list (make-packet :type :noop)))))

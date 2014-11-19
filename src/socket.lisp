@@ -192,7 +192,7 @@
                                  (make-packet :type :pong :data "probe")))
                   (start-check-interval socket))
                  ((and (eq (packet-type packet) :upgrade)
-                       (eq (socket-ready-state socket) :open))
+                       (not (eq (socket-ready-state socket) :closed)))
                   (log:debug "got upgrade packet - upgrading")
                   (setf (socket-upgraded-p socket) t)
                   (on :error transport
@@ -207,7 +207,11 @@
                   (flush-buffer socket)
                   (stop-timer (socket-timers socket) :check-interval)
                   (stop-timer (socket-timers socket) :upgrade-timeout)
-                  (remove-listener transport :packet #'on-packet))
+                  (remove-listener transport :packet #'on-packet)
+                  (when (eq (socket-ready-state socket) :closing)
+                    (close-transport transport
+                                     (lambda ()
+                                       (on-close socket "forced close")))))
                  (T (close-transport transport)))))
       (on :packet transport #'on-packet))))
 
@@ -277,7 +281,14 @@
 
 @export
 (defun close-socket (socket)
-  (when (eq (socket-ready-state socket) :open)
-    (setf (socket-ready-state socket) :closing)
-    (close-transport (socket-transport socket)
-                     (lambda () (on-close socket "forced close")))))
+  (flet ((do-close-transport ()
+           (close-transport (socket-transport socket)
+                            (lambda () (on-close socket "forced close")))))
+    (when (eq (socket-ready-state socket) :open)
+      (setf (socket-ready-state socket) :closing)
+
+      (cond
+        ((= 0 (length (socket-write-buffer socket)))
+         (do-close-transport))
+        (T (once :drain socket
+                 #'do-close-transport))))))

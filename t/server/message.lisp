@@ -8,7 +8,7 @@
         :ps))
 (in-package :t-engine-io-server.server.message)
 
-(plan 13)
+(plan 14)
 (slow-threshold 500)
 
 (diag "- message")
@@ -98,7 +98,7 @@ c"))
       "a"))
 
 (with-server (:allow-upgrades nil :transports '("websocket"))
-  (diag "should arrive from server to client (ws)")
+  (diag "should arrive from server to client (multiple, ws)")
   (on :connection *server*
       (lambda (socket)
         (send socket "a")
@@ -107,6 +107,27 @@ c"))
           (as:with-delay (0.05)
             (send socket "c")
             (close-socket socket)))))
+  (is (node-exec
+       (with-client-socket (socket nil :transports '("websocket"))
+         (on :open socket
+             (lambda ()
+               (on :message socket
+                   (lambda (msg)
+                     (console.log msg)))
+               (set-timeout exit 300)))))
+      "a
+b
+c"))
+
+(with-server (:allow-upgrades nil :transports '("websocket"))
+  (diag "should arrive from server to client (multiple, no delay, ws)")
+  (on :connection *server*
+      (lambda (socket)
+        (send socket "a")
+        (send socket "b")
+        (send socket "c")
+        (close-socket socket)))
+
   (is (node-exec
        (with-client-socket (socket nil :transports '("websocket"))
          (on :open socket
@@ -211,7 +232,6 @@ c"))
 1011769
 1021592"))
 
-;; FIXME
 (with-server (:allow-upgrades nil)
   (diag "should trigger a flush/drain event")
   (let ((total-event 4)
